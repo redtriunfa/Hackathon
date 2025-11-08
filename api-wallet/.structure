@@ -1,0 +1,23 @@
+# Estructura de carpetas y archivos creada para el proyecto API Wallet
+
+src/
+  functions/
+    balance.js
+    setPin.js
+    p2pPayment.js
+    initiateWithdrawal.js
+    tandas.js
+    creditSale.js
+    distributeWm.js
+    timerTanda.js
+  db/
+    mysql.js
+    schema.sql
+  utils/
+    security.js
+    response.js
+  config/
+    index.js
+tests/
+  (archivos de pruebas unitarias)
+docker-compose.yml

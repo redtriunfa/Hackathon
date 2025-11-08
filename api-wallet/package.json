@@ -1,0 +1,26 @@
+{
+  "name": "api-wallet",
+  "version": "1.0.0",
+  "description": "API Wallet - Hackathon Interledger (Equipo 2)",
+  "main": "src/functions/balance.js",
+  "scripts": {
+    "start": "func start",
+    "test": "jest"
+  },
+  "dependencies": {
+    "mysql2": "^3.9.0",
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "azure-functions",
+    "wallet",
+    "hackathon",
+    "interledger"
+  ],
+  "author": "Equipo 2",
+  "license": "MIT"
+}
