@@ -1,0 +1,44 @@
+# docker-compose.yml para Rafiki Local Playground (Interledger Hackathon)
+# Basado en la documentación oficial de Rafiki: https://rafiki.dev/integration/playground/overview/
+
+version: "3.8"
+
+services:
+  rafiki:
+    image: interledger/rafiki:latest
+    container_name: rafiki
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://rafiki:rafiki@rafiki-db:5432/rafiki
+      - REDIS_URL=redis://rafiki-redis:6379
+      - LOG_LEVEL=debug
+    depends_on:
+      - rafiki-db
+      - rafiki-redis
+
+  rafiki-db:
+    image: postgres:14
+    container_name: rafiki-db
+    environment:
+      POSTGRES_USER: rafiki
+      POSTGRES_PASSWORD: rafiki
+      POSTGRES_DB: rafiki
+    ports:
+      - "5432:5432"
+    volumes:
+      - rafiki-db-data:/var/lib/postgresql/data
+
+  rafiki-redis:
+    image: redis:6
+    container_name: rafiki-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - rafiki-redis-data:/data
+
+volumes:
+  rafiki-db-data:
+  rafiki-redis-data:

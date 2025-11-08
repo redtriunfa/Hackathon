@@ -49,6 +49,17 @@ api-wallet/
 3. Desplegar funciones en Azure o correr localmente con Azure Functions Core Tools.
 4. Ejecutar el script SQL en la base de datos MySQL de Azure.
 
+## Rafiki Local Playground
+
+Para levantar Rafiki localmente para pruebas de Web Monetization y pagos Interledger:
+
+```sh
+cd api-wallet
+docker-compose up
+```
+
+Esto iniciará los servicios de Rafiki, Postgres y Redis en los puertos 3000, 3001, 5432 y 6379. La API puede integrarse con Rafiki usando las variables `RAFIKI_URL` y `RAFIKI_API_KEY` en `.env`.
+
 ## Contrato de API
 
 Ver documento "Plan de Proyecto Hackathon Interledger.pdf" sección 2.2 para los endpoints REST a implementar.
