@@ -104,24 +104,76 @@ app.post('/api/balance', async (req, res) => {
  * }
  */
 app.post('/api/transfer', async (req, res) => {
-  const { tx_id, user_id, interledger_wallet_id, amount, currency, status, created_at, idempotency_key } = req.body
+  const { tx_id, user_id, interledger_wallet_id, amount, currency, status, created_at, idempotency_key, payee_user_id, payee_interledger_wallet_id, concept, prefer_method } = req.body
   console.log('[DEBUG] /api/transfer request:', req.body)
-  if (!tx_id || !user_id || !interledger_wallet_id || !amount || !currency || !status || !created_at || !idempotency_key) {
+  if (!tx_id || !user_id || !interledger_wallet_id || !amount || !currency || !status || !created_at || !idempotency_key || !payee_user_id || !payee_interledger_wallet_id) {
     console.error('[ERROR] Faltan campos requeridos en la transacción')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
-  // Aquí iría la lógica real de la transacción (validación, actualización de saldo, etc.)
-  // Simulación: se confirma la transacción
-  return res.json({
-    tx_id,
-    user_id,
-    interledger_wallet_id,
-    amount,
-    currency,
-    status: "confirmed",
-    created_at,
-    idempotency_key
-  })
+  let conn
+  try {
+    conn = await mysql.createConnection(dbConfig)
+    console.log('[DEBUG] Conexión a MySQL establecida')
+    // Obtener IDs de payer y payee
+    const [payerRows] = await conn.execute(
+      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
+      [user_id, interledger_wallet_id]
+    )
+    const [payeeRows] = await conn.execute(
+      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
+      [payee_user_id, payee_interledger_wallet_id]
+    )
+    if (!payerRows.length || !payeeRows.length) {
+      return res.status(404).json({ error: 'Payer o Payee no encontrado', '@terminal': 'No existe usuario/cuenta' })
+    }
+    const id_wallet_payer = payerRows[0].id
+    const id_wallet_payee = payeeRows[0].id
+
+    // Simulación de integración con Open Payments (aquí iría la llamada real)
+    // const openPaymentsResult = await axios.post('https://rafiki.example.com/payments', { ... })
+    // const openPaymentsStatus = openPaymentsResult.data.status || "confirmed"
+    const openPaymentsStatus = "confirmed"
+
+    // Registrar la transacción en la base de datos
+    await conn.execute(
+      `INSERT INTO transacciones
+        (id_wallet_payer, id_wallet_payee, amount, currency, concept, timestamp, status, prefer_method)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_wallet_payer,
+        id_wallet_payee,
+        amount,
+        currency,
+        concept || "Transferencia entre usuarios",
+        created_at.replace("T", " ").replace("Z", ""), // Formato DATETIME
+        openPaymentsStatus,
+        prefer_method || "open_payments"
+      ]
+    )
+    // Responder con eco de la transacción
+    return res.json({
+      tx_id,
+      user_id,
+      interledger_wallet_id,
+      payee_user_id,
+      payee_interledger_wallet_id,
+      amount,
+      currency,
+      status: openPaymentsStatus,
+      created_at,
+      idempotency_key,
+      concept: concept || "Transferencia entre usuarios",
+      prefer_method: prefer_method || "open_payments"
+    })
+  } catch (err) {
+    console.error('[ERROR] Excepción en /api/transfer:', err)
+    return res.status(500).json({ error: err.message, '@terminal': err.stack })
+  } finally {
+    if (conn) {
+      await conn.end()
+      console.log('[DEBUG] Conexión a MySQL cerrada')
+    }
+  }
 })
 
 /**
