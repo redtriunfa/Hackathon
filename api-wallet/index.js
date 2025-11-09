@@ -235,9 +235,9 @@ app.post('/api/confirm-payment', (req, res) => {
  * }
  */
 app.post('/api/register', async (req, res) => {
-  const { user_id, phone, interledger_wallet_id, preferred_method, pin, wallet_token } = req.body
+  const { user_id, phone, preferred_method, pin, wallet_token, wp_user_id } = req.body
   console.log('[DEBUG] /api/register request:', req.body)
-  if (!user_id || !phone || !interledger_wallet_id || !preferred_method || !pin || !wallet_token) {
+  if (!user_id || !phone || !preferred_method || !pin || !wallet_token || !wp_user_id) {
     console.error('[ERROR] Faltan campos requeridos para registro')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -255,22 +255,26 @@ app.post('/api/register', async (req, res) => {
     }
     // Hashear el PIN
     const pin_hash = await bcrypt.hash(pin, 10)
-    // Insertar usuario con interledger_wallet_id y wallet_token
-    await conn.execute(
-      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash, clabe_registrada, state_context) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, phone, 0, pin_hash, interledger_wallet_id, JSON.stringify({ wallet_token })]
-    )
-    // Simular creación de cuenta en Open Payments (aquí deberías hacer la llamada real)
+    // Crear cuenta en Open Payments (simulación, reemplaza por llamada real)
     // const { data } = await axios.post('https://rafiki.example.com/accounts', { ... })
-    // const account_address = data.account_address
+    // const interledger_wallet_id = data.accountId
+    const interledger_wallet_id = `rafiki_${user_id}` // Simulación
     const account_address = `openpayments.example.com/accounts/${user_id}` // Simulación
+
+    // Insertar usuario con los datos requeridos
+    await conn.execute(
+      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash, clabe_registrada, interledger_wallet_id, wp_user_id, state_context) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [user_id, phone, 0, pin_hash, "", interledger_wallet_id, wp_user_id, JSON.stringify({ wallet_token })]
+    )
     return res.status(201).json({
       user_id,
       phone,
       interledger_wallet_id,
       preferred_method,
       account_address,
-      wallet_token
+      wallet_token,
+      currency: "MXN",
+      wp_user_id
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/register:', err)
