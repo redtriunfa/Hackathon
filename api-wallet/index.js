@@ -86,11 +86,11 @@ app.post('/api/balance', async (req, res) => {
  * Solicitud:
  * {
  *   "tx_id": "tx_20251108_0001",
- *   "user_id": "u_123",
- *   "wp_user_id": 123,
- *   "payee_user_id": 456,
- *   "payee_wp_user_id": 789,
- *   "amount": 150.00,
+ *   "user_id": "u_125",
+ *   "wp_user_id": 456,
+ *   "payee_user_id": 457,
+ *   "payee_wp_user_id": 456,
+ *   "amount": 20.00,
  *   "currency": "MXN",
  *   "status": "pending|confirmed|failed",
  *   "created_at": "2025-11-08T13:00:00Z",
@@ -101,11 +101,11 @@ app.post('/api/balance', async (req, res) => {
  * Respuesta (eco de la transacción, ejemplo):
  * {
  *   "tx_id": "tx_20251108_0001",
- *   "user_id": "u_123",
- *   "wp_user_id": 123,
+ *   "user_id": "u_125",
+ *   "wp_user_id": 456,
  *   "payee_user_id": 456,
- *   "payee_wp_user_id": 789,
- *   "amount": 150.00,
+ *   "payee_wp_user_id": 457,
+ *   "amount": 20.00,
  *   "currency": "MXN",
  *   "status": "confirmed",
  *   "created_at": "2025-11-08T13:00:00Z",
