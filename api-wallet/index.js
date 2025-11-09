@@ -26,22 +26,22 @@ console.log('[DEBUG] Inicializando API Wallet Interledger')
  * {
  *   "user_id": "u_123",
  *   "phone": "+521XXXXXXXXXX",
- *   "wallet_id": "w_456",
+ *   "interledger_wallet_id": "w_456",
  *   "preferred_method": "wallet_token"
  * }
  * Respuesta:
  * {
  *   "user_id": "u_123",
  *   "phone": "+521XXXXXXXXXX",
- *   "wallet_id": "w_456",
+ *   "interledger_wallet_id": "w_456",
  *   "preferred_method": "wallet_token",
  *   "Balance": 1000
  * }
  */
 app.post('/api/balance', async (req, res) => {
-  const { user_id, phone, wallet_id, preferred_method } = req.body
+  const { user_id, phone, interledger_wallet_id, preferred_method } = req.body
   console.log('[DEBUG] /api/balance request:', req.body)
-  if (!user_id || !phone || !wallet_id || !preferred_method) {
+  if (!user_id || !phone || !interledger_wallet_id || !preferred_method) {
     console.error('[ERROR] Faltan campos requeridos')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -49,10 +49,10 @@ app.post('/api/balance', async (req, res) => {
   try {
     conn = await mysql.createConnection(dbConfig)
     console.log('[DEBUG] Conexión a MySQL establecida')
-    // Buscar el usuario por user_id y wallet_id
+    // Buscar el usuario por user_id y interledger_wallet_id
     const [rows] = await conn.execute(
-      'SELECT saldo_mxn FROM productores_wallet WHERE usuario_id = ?',
-      [user_id]
+      'SELECT saldo_mxn FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
+      [user_id, interledger_wallet_id]
     )
     console.log('[DEBUG] Resultado de consulta:', rows)
     let balance = 0
@@ -63,7 +63,7 @@ app.post('/api/balance', async (req, res) => {
     return res.json({
       user_id,
       phone,
-      wallet_id,
+      interledger_wallet_id,
       preferred_method,
       Balance: balance
     })
@@ -84,6 +84,7 @@ app.post('/api/balance', async (req, res) => {
  * {
  *   "tx_id": "tx_20251108_0001",
  *   "user_id": "u_123",
+ *   "interledger_wallet_id": "w_456",
  *   "amount": 150.00,
  *   "currency": "MXN",
  *   "status": "pending|confirmed|failed",
@@ -94,6 +95,7 @@ app.post('/api/balance', async (req, res) => {
  * {
  *   "tx_id": "tx_20251108_0001",
  *   "user_id": "u_123",
+ *   "interledger_wallet_id": "w_456",
  *   "amount": 150.00,
  *   "currency": "MXN",
  *   "status": "confirmed",
@@ -102,9 +104,9 @@ app.post('/api/balance', async (req, res) => {
  * }
  */
 app.post('/api/transfer', async (req, res) => {
-  const { tx_id, user_id, amount, currency, status, created_at, idempotency_key } = req.body
+  const { tx_id, user_id, interledger_wallet_id, amount, currency, status, created_at, idempotency_key } = req.body
   console.log('[DEBUG] /api/transfer request:', req.body)
-  if (!tx_id || !user_id || !amount || !currency || !status || !created_at || !idempotency_key) {
+  if (!tx_id || !user_id || !interledger_wallet_id || !amount || !currency || !status || !created_at || !idempotency_key) {
     console.error('[ERROR] Faltan campos requeridos en la transacción')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -113,6 +115,7 @@ app.post('/api/transfer', async (req, res) => {
   return res.json({
     tx_id,
     user_id,
+    interledger_wallet_id,
     amount,
     currency,
     status: "confirmed",
@@ -163,23 +166,25 @@ app.post('/api/confirm-payment', (req, res) => {
  * {
  *   "user_id": "u_123",
  *   "phone": "+521XXXXXXXXXX",
- *   "wallet_id": "w_456",
+ *   "interledger_wallet_id": "w_456",
  *   "preferred_method": "wallet_token",
- *   "pin": "1234"
+ *   "pin": "1234",
+ *   "wallet_token": "token_simulado"
  * }
  * Respuesta:
  * {
  *   "user_id": "u_123",
  *   "phone": "+521XXXXXXXXXX",
- *   "wallet_id": "w_456",
+ *   "interledger_wallet_id": "w_456",
  *   "preferred_method": "wallet_token",
- *   "account_address": "openpayments.example.com/accounts/u_123"
+ *   "account_address": "openpayments.example.com/accounts/u_123",
+ *   "wallet_token": "token_simulado"
  * }
  */
 app.post('/api/register', async (req, res) => {
-  const { user_id, phone, wallet_id, preferred_method, pin } = req.body
+  const { user_id, phone, interledger_wallet_id, preferred_method, pin, wallet_token } = req.body
   console.log('[DEBUG] /api/register request:', req.body)
-  if (!user_id || !phone || !wallet_id || !preferred_method || !pin) {
+  if (!user_id || !phone || !interledger_wallet_id || !preferred_method || !pin || !wallet_token) {
     console.error('[ERROR] Faltan campos requeridos para registro')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -197,10 +202,10 @@ app.post('/api/register', async (req, res) => {
     }
     // Hashear el PIN
     const pin_hash = await bcrypt.hash(pin, 10)
-    // Insertar usuario
+    // Insertar usuario con interledger_wallet_id y wallet_token
     await conn.execute(
-      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash) VALUES (?, ?, ?, ?)',
-      [user_id, phone, 0, pin_hash]
+      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash, clabe_registrada, state_context) VALUES (?, ?, ?, ?, ?, ?)',
+      [user_id, phone, 0, pin_hash, interledger_wallet_id, JSON.stringify({ wallet_token })]
     )
     // Simular creación de cuenta en Open Payments (aquí deberías hacer la llamada real)
     // const { data } = await axios.post('https://rafiki.example.com/accounts', { ... })
@@ -209,9 +214,10 @@ app.post('/api/register', async (req, res) => {
     return res.status(201).json({
       user_id,
       phone,
-      wallet_id,
+      interledger_wallet_id,
       preferred_method,
-      account_address
+      account_address,
+      wallet_token
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/register:', err)

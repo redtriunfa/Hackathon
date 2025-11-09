@@ -1,6 +1,131 @@
 # API Wallet - Hackathon Interledger
 
-Estructura inicial del proyecto para el equipo 2 (API de Wallet y Ledger).
+## Endpoints y Especificaciones (actualizado 2025-11-08)
+
+### 1. Registro de usuario (`/api/register`)
+- **POST** `/api/register`
+- **Body ejemplo:**
+```json
+{
+  "user_id": "u_123",
+  "phone": "+5215551234567",
+  "interledger_wallet_id": "w_456",
+  "preferred_method": "wallet_token",
+  "pin": "1234",
+  "wallet_token": "token_simulado"
+}
+```
+- **Respuesta:**
+```json
+{
+  "user_id": "u_123",
+  "phone": "+5215551234567",
+  "interledger_wallet_id": "w_456",
+  "preferred_method": "wallet_token",
+  "account_address": "openpayments.example.com/accounts/u_123",
+  "wallet_token": "token_simulado"
+}
+```
+- El campo `wallet_token` se almacena en la base de datos en el campo `state_context` (JSON).
+
+### 2. Consulta de saldo (`/api/balance`)
+- **POST** `/api/balance`
+- **Body ejemplo:**
+```json
+{
+  "user_id": "u_123",
+  "phone": "+5215551234567",
+  "interledger_wallet_id": "w_456",
+  "preferred_method": "wallet_token"
+}
+```
+- **Respuesta:**
+```json
+{
+  "user_id": "u_123",
+  "phone": "+5215551234567",
+  "interledger_wallet_id": "w_456",
+  "preferred_method": "wallet_token",
+  "Balance": 1000
+}
+```
+
+### 3. Transferencia (`/api/transfer`)
+- **POST** `/api/transfer`
+- **Body ejemplo:**
+```json
+{
+  "tx_id": "tx_20251108_0001",
+  "user_id": "u_123",
+  "interledger_wallet_id": "w_456",
+  "amount": 150.00,
+  "currency": "MXN",
+  "status": "pending",
+  "created_at": "2025-11-08T13:00:00Z",
+  "idempotency_key": "uuid-v4"
+}
+```
+- **Respuesta:**
+```json
+{
+  "tx_id": "tx_20251108_0001",
+  "user_id": "u_123",
+  "interledger_wallet_id": "w_456",
+  "amount": 150.00,
+  "currency": "MXN",
+  "status": "confirmed",
+  "created_at": "2025-11-08T13:00:00Z",
+  "idempotency_key": "uuid-v4"
+}
+```
+
+### 4. Confirmación de pago (`/api/confirm-payment`)
+- **POST** `/api/confirm-payment`
+- **Body ejemplo:**
+```json
+{
+  "session_id": "sess_789",
+  "user_id": "u_123",
+  "flow": "confirm_payment",
+  "step": "awaiting_confirmation",
+  "expires_at": 1700000000
+}
+```
+- **Respuesta:**
+```json
+{
+  "session_id": "sess_789",
+  "user_id": "u_123",
+  "flow": "confirm_payment",
+  "step": "awaiting_confirmation",
+  "expires_at": 1700000000
+}
+```
+
+### 5. Notas sobre credenciales y base de datos
+
+- El campo `state_context` en la tabla `productores_wallet` almacena las credenciales del wallet (por ejemplo, `wallet_token`) en formato JSON.
+- El campo `interledger_wallet_id` identifica la wallet asociada a cada usuario y se usa en todas las operaciones.
+- Para pagos reales, el backend debe usar el `wallet_token` almacenado en `state_context` para autenticar la operación contra Open Payments.
+
+## Pruebas rápidas (PowerShell/Invoke-RestMethod)
+
+#### Registro:
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/register" -Method POST -ContentType "application/json" -Body '{"user_id": "u_123", "phone": "+5215551234567", "interledger_wallet_id": "w_456", "preferred_method": "wallet_token", "pin": "1234", "wallet_token": "token_simulado"}'
+```
+#### Saldo:
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/balance" -Method POST -ContentType "application/json" -Body '{"user_id": "u_123", "phone": "+5215551234567", "interledger_wallet_id": "w_456", "preferred_method": "wallet_token"}'
+```
+#### Transferencia:
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/transfer" -Method POST -ContentType "application/json" -Body '{"tx_id": "tx_20251108_0001", "user_id": "u_123", "interledger_wallet_id": "w_456", "amount": 150.00, "currency": "MXN", "status": "pending", "created_at": "2025-11-08T13:00:00Z", "idempotency_key": "uuid-v4"}'
+```
+#### Confirmación de pago:
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/confirm-payment" -Method POST -ContentType "application/json" -Body '{"session_id": "sess_789", "user_id": "u_123", "flow": "confirm_payment", "step": "awaiting_confirmation", "expires_at": 1700000000}'
+```
 
 ## Estructura de Carpetas
 
