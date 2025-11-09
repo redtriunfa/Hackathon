@@ -218,7 +218,8 @@ app.post('/api/confirm-payment', (req, res) => {
  * {
  *   "user_id": "u_123",
  *   "phone": "+521XXXXXXXXXX",
- *   "interledger_wallet_id": "w_456",
+ *   "wp_user_id": "w_456"
+ *   "interledger_wallet_id": "",
  *   "preferred_method": "wallet_token",
  *   "pin": "1234",
  *   "wallet_token": "token_simulado"
