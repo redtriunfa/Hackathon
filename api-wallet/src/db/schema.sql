@@ -43,3 +43,18 @@ CREATE TABLE IF NOT EXISTS tanda_calendario (
   FOREIGN KEY (tanda_id) REFERENCES tandas(id),
   FOREIGN KEY (telefono_wa_recibe) REFERENCES productores_wallet(telefono_wa)
 );
+
+-- Tabla de transacciones
+CREATE TABLE IF NOT EXISTS transacciones (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_wallet_payer INT NOT NULL,
+  id_wallet_payee INT NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  currency VARCHAR(10) NOT NULL,
+  concept VARCHAR(255),
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  status VARCHAR(50) NOT NULL,
+  prefer_method VARCHAR(50),
+  FOREIGN KEY (id_wallet_payer) REFERENCES productores_wallet(id),
+  FOREIGN KEY (id_wallet_payee) REFERENCES productores_wallet(id)
+);

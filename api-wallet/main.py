@@ -64,15 +64,39 @@ async def transfer(req: TransferRequest):
     # Validar PIN contra base de datos
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT pin_hash FROM productores_wallet WHERE usuario_id=%s", (req.from_usuario_id,))
-        user = cursor.fetchone()
-        if not user or not bcrypt.checkpw(req.pin.encode(), user["pin_hash"].encode()):
+        cursor.execute("SELECT id, pin_hash FROM productores_wallet WHERE usuario_id=%s", (req.from_usuario_id,))
+        payer = cursor.fetchone()
+        cursor.execute("SELECT id FROM productores_wallet WHERE usuario_id=%s", (req.to_usuario_id,))
+        payee = cursor.fetchone()
+        if not payer or not bcrypt.checkpw(req.pin.encode(), payer["pin_hash"].encode()):
             db.close()
             raise HTTPException(status_code=401, detail="PIN_INCORRECTO")
+        if not payee:
+            db.close()
+            raise HTTPException(status_code=404, detail="DESTINATARIO_NO_ENCONTRADO")
+        # Integración con SDK Open Payments (simulado)
+        # resultado = openpayments.transfer(req.from_usuario_id, req.to_usuario_id, req.amount)
+        resultado = "ok"  # Simulación, reemplazar por resultado real del SDK
+
+        # Registrar la transacción en la tabla transacciones
+        cursor.execute(
+            """
+            INSERT INTO transacciones (
+                id_wallet_payer, id_wallet_payee, amount, currency, concept, status, prefer_method
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                payer["id"],
+                payee["id"],
+                req.amount,
+                "MXN",
+                "Transferencia entre usuarios",
+                "COMPLETADA" if resultado == "ok" else "FALLIDA",
+                "open_payments"
+            )
+        )
+        db.commit()
     db.close()
-    # Integración con SDK Open Payments (simulado)
-    # resultado = openpayments.transfer(req.from_usuario_id, req.to_usuario_id, req.amount)
-    resultado = "ok"  # Simulación, reemplazar por resultado real del SDK
     return {
         "from_usuario_id": req.from_usuario_id,
         "to_usuario_id": req.to_usuario_id,
