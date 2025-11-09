@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS productores_wallet (
   interledger_wallet_id VARCHAR(100),
   pin_hash VARCHAR(60),
   conversation_state VARCHAR(50),
-  state_context JSON
+  state_context JSON,
+  currency VARCHAR(8) NOT NULL DEFAULT 'MXN',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de tandas (grupos de ahorro)

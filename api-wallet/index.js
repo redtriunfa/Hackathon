@@ -51,13 +51,15 @@ app.post('/api/balance', async (req, res) => {
     console.log('[DEBUG] Conexión a MySQL establecida')
     // Buscar el usuario por user_id y interledger_wallet_id
     const [rows] = await conn.execute(
-      'SELECT saldo_mxn FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
+      'SELECT saldo_mxn, currency FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
       [user_id, interledger_wallet_id]
     )
     console.log('[DEBUG] Resultado de consulta:', rows)
     let balance = 0
+    let currency = "MXN"
     if (rows.length) {
       balance = parseFloat(rows[0].saldo_mxn)
+      currency = rows[0].currency || "MXN"
     }
     // Respuesta con el formato solicitado
     return res.json({
@@ -65,7 +67,8 @@ app.post('/api/balance', async (req, res) => {
       phone,
       interledger_wallet_id,
       preferred_method,
-      Balance: balance
+      Balance: balance,
+      currency
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/balance:', err)
@@ -263,9 +266,35 @@ app.post('/api/register', async (req, res) => {
 
     // Insertar usuario con los datos requeridos
     await conn.execute(
-      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash, clabe_registrada, interledger_wallet_id, wp_user_id, state_context) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [user_id, phone, 0, pin_hash, "", interledger_wallet_id, wp_user_id, JSON.stringify({ wallet_token })]
+      'INSERT INTO productores_wallet (usuario_id, telefono_wa, saldo_mxn, pin_hash, clabe_registrada, interledger_wallet_id, wp_user_id, state_context, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [user_id, phone, 0, pin_hash, "", interledger_wallet_id, wp_user_id, JSON.stringify({ wallet_token }), "MXN"]
     )
+    // Consultar el registro recién creado para obtener el timestamp y el id
+    const [createdRows] = await conn.execute(
+      'SELECT id, created_at FROM productores_wallet WHERE usuario_id = ?',
+      [user_id]
+    )
+    const created_at = createdRows.length ? createdRows[0].created_at : null
+    const id_wallet = createdRows.length ? createdRows[0].id : null
+
+    // Depósito inicial: 100 MXN
+    const initialAmount = 100
+    await conn.execute(
+      'UPDATE productores_wallet SET saldo_mxn = ? WHERE id = ?',
+      [initialAmount, id_wallet]
+    )
+    await conn.execute(
+      `INSERT INTO transacciones
+        (id_wallet_payer, id_wallet_payee, amount, currency, concept, status, prefer_method)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_wallet, id_wallet, initialAmount, "MXN",
+        "Depósito inicial de bienvenida",
+        "confirmed",
+        "demo"
+      ]
+    )
+
     return res.status(201).json({
       user_id,
       phone,
@@ -274,7 +303,9 @@ app.post('/api/register', async (req, res) => {
       account_address,
       wallet_token,
       currency: "MXN",
-      wp_user_id
+      created_at,
+      wp_user_id,
+      initial_deposit: initialAmount
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/register:', err)
