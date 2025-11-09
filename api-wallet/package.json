@@ -1,26 +1,21 @@
 {
   "name": "api-wallet",
-  "version": "1.0.0",
-  "description": "API Wallet - Hackathon Interledger (Equipo 2)",
-  "main": "src/functions/balance.js",
+  "version": "2.0.0",
+  "description": "API Wallet Interledger - Node.js + Open Payments SDK",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "func start",
-    "test": "jest"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
-    "mysql2": "^3.9.0",
-    "bcrypt": "^5.1.0",
-    "dotenv": "^16.3.1"
+    "axios": "^1.13.2",
+    "bcrypt": "^5.1.1",
+    "express": "^4.18.2",
+    "mysql2": "^3.9.7",
+    "open-payments": "latest"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
-  },
-  "keywords": [
-    "azure-functions",
-    "wallet",
-    "hackathon",
-    "interledger"
-  ],
-  "author": "Equipo 2",
-  "license": "MIT"
+    "nodemon": "^3.0.1"
+  }
 }

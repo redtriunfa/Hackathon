@@ -4,6 +4,9 @@ from pydantic import BaseModel
 import pymysql
 import bcrypt
 
+# Ejemplo de integración con el SDK de Open Payments (ajustar el import según el paquete real)
+# import openpayments
+
 app = FastAPI(
     title="API Wallet Interledger",
     description="Backend de pagos Interledger - Hackathon (Plan v2)",
@@ -42,10 +45,7 @@ class TransferRequest(BaseModel):
 
 @app.post("/api/balance")
 async def balance(req: BalanceRequest):
-    # TODO: Integrar con SDK Open Payments para consultar saldo en Rafiki
-    # Ejemplo de integración (pendiente de detalles reales):
-    # saldo = open_payments_sdk.get_balance(req.usuario_id)
-    # Validar PIN contra base de datos si es necesario
+    # Validar PIN contra base de datos
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute("SELECT pin_hash FROM productores_wallet WHERE usuario_id=%s", (req.usuario_id,))
@@ -54,15 +54,14 @@ async def balance(req: BalanceRequest):
             db.close()
             raise HTTPException(status_code=401, detail="PIN_INCORRECTO")
     db.close()
-    # Respuesta simulada (ajustar cuando se integre SDK)
-    return {"usuario_id": req.usuario_id, "balance": 1000.0, "moneda": "MXN"}
+    # Integración con SDK Open Payments (simulado)
+    # saldo = openpayments.get_balance(req.usuario_id)
+    saldo = 1000.0  # Simulación, reemplazar por saldo real del SDK
+    return {"usuario_id": req.usuario_id, "balance": saldo, "moneda": "MXN"}
 
 @app.post("/api/transfer")
 async def transfer(req: TransferRequest):
-    # TODO: Integrar con SDK Open Payments para transferir entre usuarios Rafiki
-    # Ejemplo de integración (pendiente de detalles reales):
-    # resultado = open_payments_sdk.transfer(req.from_usuario_id, req.to_usuario_id, req.amount)
-    # Validar PIN contra base de datos si es necesario
+    # Validar PIN contra base de datos
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute("SELECT pin_hash FROM productores_wallet WHERE usuario_id=%s", (req.from_usuario_id,))
@@ -71,13 +70,15 @@ async def transfer(req: TransferRequest):
             db.close()
             raise HTTPException(status_code=401, detail="PIN_INCORRECTO")
     db.close()
-    # Respuesta simulada (ajustar cuando se integre SDK)
+    # Integración con SDK Open Payments (simulado)
+    # resultado = openpayments.transfer(req.from_usuario_id, req.to_usuario_id, req.amount)
+    resultado = "ok"  # Simulación, reemplazar por resultado real del SDK
     return {
         "from_usuario_id": req.from_usuario_id,
         "to_usuario_id": req.to_usuario_id,
         "amount": req.amount,
         "moneda": "MXN",
-        "resultado": "ok"
+        "resultado": resultado
     }
 
 # NOTA: Cuando el equipo 1 defina el JSON, ajustar los modelos y la lógica de los endpoints.

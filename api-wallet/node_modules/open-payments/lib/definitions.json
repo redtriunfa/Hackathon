@@ -1,0 +1,40 @@
+{
+	"auth":{
+		"user":"",
+		"key":"",
+		"app_token":""
+	},
+	"url":"openpaymentsdata.cms.gov",
+	"datasets":{
+		"2013":{
+			"general":"anxy-rykp",
+			"research":"js34-gyng",
+			"ownership":"qfxb-3che",
+			"pi":"js34-gyng"
+		},
+		"2014":{
+			"general":"v3nw-usd7",
+			"research":"rcq9-ev4w",
+			"ownership":"etee-p3wf",
+			"pi":"rcq9-ev4w"	
+		}
+	},
+	"searchFile":{
+		"endPoint":{
+			"physician":"gmj8-2w4s",
+			"company":"a9zx-nnrd",
+			"hospital":"8rvs-2spk"
+		},
+		"fieldName":{
+			"physician":"physician_profile_id",
+			"company":"amgpo_making_payment_id",
+			"hospital":"teaching_hospital_id"
+		}
+	},
+	"selects":{
+		"general":"sum(total_amount_of_payment_usdollars) as value, count(record_id) as count",
+		"research":"sum(total_amount_of_payment_usdollars)as value, count(record_id) as count",
+		"ownership":"sum(total_amount_invested_usdollars) as invested,sum(value_of_interest) as interest, count(record_id) as count",
+		"pi":"sum(total_amount_of_payment_usdollars) as value, count(record_id)as count"
+	}
+}

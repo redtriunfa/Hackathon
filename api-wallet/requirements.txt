@@ -1,0 +1,7 @@
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pymysql>=1.1.0
+bcrypt>=4.0.1
+requests>=2.31.0
+# SDK de Open Payments para Interledger (ajustar el nombre del paquete según la documentación oficial)
+openpayments

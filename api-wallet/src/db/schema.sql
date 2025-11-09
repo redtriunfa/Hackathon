@@ -3,10 +3,12 @@
 -- Tabla principal de productores (wallet)
 CREATE TABLE IF NOT EXISTS productores_wallet (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  telefono_wa VARCHAR(20) UNIQUE NOT NULL,
+  usuario_id VARCHAR(50) UNIQUE NOT NULL,
+  telefono_wa VARCHAR(20) UNIQUE,
   wp_user_id BIGINT,
   saldo_mxn DECIMAL(10,2) NOT NULL DEFAULT 0,
   clabe_registrada VARCHAR(18),
+  interledger_wallet_id VARCHAR(100),
   pin_hash VARCHAR(60),
   conversation_state VARCHAR(50),
   state_context JSON
