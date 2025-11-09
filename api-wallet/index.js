@@ -39,9 +39,9 @@ console.log('[DEBUG] Inicializando API Wallet Interledger')
  * }
  */
 app.post('/api/balance', async (req, res) => {
-  const { user_id, phone, interledger_wallet_id, preferred_method } = req.body
+  const { user_id, phone, wp_user_id, preferred_method } = req.body
   console.log('[DEBUG] /api/balance request:', req.body)
-  if (!user_id || !phone || !interledger_wallet_id || !preferred_method) {
+  if (!user_id || !phone || !wp_user_id || !preferred_method) {
     console.error('[ERROR] Faltan campos requeridos')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -49,10 +49,10 @@ app.post('/api/balance', async (req, res) => {
   try {
     conn = await mysql.createConnection(dbConfig)
     console.log('[DEBUG] Conexión a MySQL establecida')
-    // Buscar el usuario por user_id y interledger_wallet_id
+    // Buscar el usuario por user_id y wp_user_id
     const [rows] = await conn.execute(
-      'SELECT saldo_mxn, currency FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
-      [user_id, interledger_wallet_id]
+      'SELECT saldo_mxn, currency FROM productores_wallet WHERE usuario_id = ? AND wp_user_id = ?',
+      [user_id, wp_user_id]
     )
     console.log('[DEBUG] Resultado de consulta:', rows)
     let balance = 0
@@ -65,9 +65,9 @@ app.post('/api/balance', async (req, res) => {
     return res.json({
       user_id,
       phone,
-      interledger_wallet_id,
+      wp_user_id,
       preferred_method,
-      Balance: balance,
+      balance,
       currency
     })
   } catch (err) {
