@@ -87,29 +87,37 @@ app.post('/api/balance', async (req, res) => {
  * {
  *   "tx_id": "tx_20251108_0001",
  *   "user_id": "u_123",
- *   "interledger_wallet_id": "w_456",
+ *   "wp_user_id": 123,
+ *   "payee_user_id": 456,
+ *   "payee_wp_user_id": 789,
  *   "amount": 150.00,
  *   "currency": "MXN",
  *   "status": "pending|confirmed|failed",
  *   "created_at": "2025-11-08T13:00:00Z",
- *   "idempotency_key": "uuid-v4"
+ *   "idempotency_key": "uuid-v4",
+ *   "concept": "Pago de tanda",
+ *   "preferred_method": "wallet_token"
  * }
  * Respuesta (eco de la transacción, ejemplo):
  * {
  *   "tx_id": "tx_20251108_0001",
  *   "user_id": "u_123",
- *   "interledger_wallet_id": "w_456",
+ *   "wp_user_id": 123,
+ *   "payee_user_id": 456,
+ *   "payee_wp_user_id": 789,
  *   "amount": 150.00,
  *   "currency": "MXN",
  *   "status": "confirmed",
  *   "created_at": "2025-11-08T13:00:00Z",
- *   "idempotency_key": "uuid-v4"
+ *   "idempotency_key": "uuid-v4",
+ *   "concept": "Pago de tanda",
+ *   "preferred_method": "wallet_token"
  * }
  */
 app.post('/api/transfer', async (req, res) => {
-  const { tx_id, user_id, interledger_wallet_id, amount, currency, status, created_at, idempotency_key, payee_user_id, payee_interledger_wallet_id, concept, prefer_method } = req.body
+  const { tx_id, user_id, wp_user_id, payee_user_id, payee_wp_user_id, amount, currency, status, created_at, idempotency_key, concept, preferred_method } = req.body
   console.log('[DEBUG] /api/transfer request:', req.body)
-  if (!tx_id || !user_id || !interledger_wallet_id || !amount || !currency || !status || !created_at || !idempotency_key || !payee_user_id || !payee_interledger_wallet_id) {
+  if (!tx_id || !user_id || !wp_user_id || !payee_user_id || !payee_wp_user_id || !amount || !currency || !status || !created_at || !idempotency_key) {
     console.error('[ERROR] Faltan campos requeridos en la transacción')
     return res.status(400).json({ error: 'Faltan campos requeridos', '@terminal': 'Solicitud incompleta' })
   }
@@ -117,14 +125,14 @@ app.post('/api/transfer', async (req, res) => {
   try {
     conn = await mysql.createConnection(dbConfig)
     console.log('[DEBUG] Conexión a MySQL establecida')
-    // Obtener IDs de payer y payee
+    // Obtener IDs de payer y payee usando wp_user_id
     const [payerRows] = await conn.execute(
-      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
-      [user_id, interledger_wallet_id]
+      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND wp_user_id = ?',
+      [user_id, wp_user_id]
     )
     const [payeeRows] = await conn.execute(
-      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND clabe_registrada = ?',
-      [payee_user_id, payee_interledger_wallet_id]
+      'SELECT id FROM productores_wallet WHERE wp_user_id = ?',
+      [payee_user_id]
     )
     if (!payerRows.length || !payeeRows.length) {
       return res.status(404).json({ error: 'Payer o Payee no encontrado', '@terminal': 'No existe usuario/cuenta' })
@@ -150,23 +158,23 @@ app.post('/api/transfer', async (req, res) => {
         concept || "Transferencia entre usuarios",
         created_at.replace("T", " ").replace("Z", ""), // Formato DATETIME
         openPaymentsStatus,
-        prefer_method || "open_payments"
+        preferred_method || "open_payments"
       ]
     )
     // Responder con eco de la transacción
     return res.json({
       tx_id,
       user_id,
-      interledger_wallet_id,
+      wp_user_id,
       payee_user_id,
-      payee_interledger_wallet_id,
+      payee_wp_user_id,
       amount,
       currency,
       status: openPaymentsStatus,
       created_at,
       idempotency_key,
       concept: concept || "Transferencia entre usuarios",
-      prefer_method: prefer_method || "open_payments"
+      preferred_method: preferred_method || "open_payments"
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/transfer:', err)
