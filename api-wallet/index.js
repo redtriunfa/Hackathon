@@ -125,13 +125,13 @@ app.post('/api/transfer', async (req, res) => {
   try {
     conn = await mysql.createConnection(dbConfig)
     console.log('[DEBUG] Conexión a MySQL establecida')
-    // Obtener IDs de payer y payee usando wp_user_id
+    // Obtener datos de pagador y receptor
     const [payerRows] = await conn.execute(
-      'SELECT id FROM productores_wallet WHERE usuario_id = ? AND wp_user_id = ?',
+      'SELECT id, saldo_mxn FROM productores_wallet WHERE usuario_id = ? AND wp_user_id = ?',
       [user_id, wp_user_id]
     )
     const [payeeRows] = await conn.execute(
-      'SELECT id FROM productores_wallet WHERE wp_user_id = ?',
+      'SELECT id, saldo_mxn FROM productores_wallet WHERE wp_user_id = ?',
       [payee_user_id]
     )
     if (!payerRows.length || !payeeRows.length) {
@@ -139,11 +139,57 @@ app.post('/api/transfer', async (req, res) => {
     }
     const id_wallet_payer = payerRows[0].id
     const id_wallet_payee = payeeRows[0].id
+    const saldo_payer = parseFloat(payerRows[0].saldo_mxn)
+    const saldo_payee = parseFloat(payeeRows[0].saldo_mxn)
 
-    // Simulación de integración con Open Payments (aquí iría la llamada real)
-    // const openPaymentsResult = await axios.post('https://rafiki.example.com/payments', { ... })
-    // const openPaymentsStatus = openPaymentsResult.data.status || "confirmed"
-    const openPaymentsStatus = "confirmed"
+    // Verificar saldo suficiente
+    if (saldo_payer < amount) {
+      return res.status(400).json({ error: 'Saldo insuficiente', '@terminal': 'El pagador no tiene fondos suficientes' })
+    }
+
+    // Llamada a Open Payments API
+    let openPaymentsStatus = "failed"
+    let openPaymentsResponse = null
+    try {
+      // Reemplaza la URL y payload según la documentación de Open Payments
+      const openPaymentsPayload = {
+        tx_id,
+        payer_user_id: user_id,
+        payer_wp_user_id: wp_user_id,
+        payee_user_id,
+        payee_wp_user_id,
+        amount,
+        currency,
+        concept: concept || "Transferencia entre usuarios",
+        idempotency_key,
+        created_at,
+        preferred_method: preferred_method || "open_payments"
+      }
+      const openPaymentsResult = await axios.post(
+        "https://rafiki.example.com/payments", // URL de Open Payments
+        openPaymentsPayload,
+        { headers: { "Content-Type": "application/json" } }
+      )
+      openPaymentsResponse = openPaymentsResult.data
+      openPaymentsStatus = openPaymentsResponse.status || "confirmed"
+    } catch (err) {
+      console.error('[ERROR] Open Payments API:', err)
+      return res.status(502).json({ error: 'Error en Open Payments', details: err.message, '@terminal': err.stack })
+    }
+
+    if (openPaymentsStatus !== "confirmed") {
+      return res.status(400).json({ error: 'Transferencia rechazada por Open Payments', openPaymentsStatus, openPaymentsResponse })
+    }
+
+    // Actualizar saldos solo si Open Payments confirma
+    await conn.execute(
+      'UPDATE productores_wallet SET saldo_mxn = saldo_mxn - ? WHERE id = ?',
+      [amount, id_wallet_payer]
+    )
+    await conn.execute(
+      'UPDATE productores_wallet SET saldo_mxn = saldo_mxn + ? WHERE id = ?',
+      [amount, id_wallet_payee]
+    )
 
     // Registrar la transacción en la base de datos
     await conn.execute(
@@ -157,11 +203,11 @@ app.post('/api/transfer', async (req, res) => {
         currency,
         concept || "Transferencia entre usuarios",
         created_at.replace("T", " ").replace("Z", ""), // Formato DATETIME
-        openPaymentsStatus,
+        "confirmed",
         preferred_method || "open_payments"
       ]
     )
-    // Responder con eco de la transacción
+    // Responder con eco de la transacción y datos de Open Payments
     return res.json({
       tx_id,
       user_id,
@@ -170,11 +216,12 @@ app.post('/api/transfer', async (req, res) => {
       payee_wp_user_id,
       amount,
       currency,
-      status: openPaymentsStatus,
+      status: "confirmed",
       created_at,
       idempotency_key,
       concept: concept || "Transferencia entre usuarios",
-      preferred_method: preferred_method || "open_payments"
+      preferred_method: preferred_method || "open_payments",
+      openPayments: openPaymentsResponse
     })
   } catch (err) {
     console.error('[ERROR] Excepción en /api/transfer:', err)
