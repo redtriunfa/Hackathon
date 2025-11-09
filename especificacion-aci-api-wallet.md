@@ -1,35 +1,63 @@
-# Especificación correcta para Azure Container Instance (ACI)  
-**Backend de Pagos Interledger – Fase 1 (según plan de trabajo Hackathon)**
+# Especificación Azure Container Instance para el Backend de Pagos (Interledger)
 
-| Parámetro                        | Valor recomendado                                  | Comentario                                                      |
-|-----------------------------------|----------------------------------------------------|-----------------------------------------------------------------|
-| Suscripción                      | Patrocinio 5 Microsoft Azure                      | Usar la suscripción habilitada para el Hackathon                |
-| Grupo de recursos                | Interledger                                       | Grupo de recursos del proyecto                                  |
-| Región                           | East US 2                                         | Sugerido por baja latencia y disponibilidad                     |
-| Nombre del contenedor            | rafiki-playground                                 | Debe reflejar el playground de Rafiki                           |
-| SKU                              | Estándar                                          | Suficiente para pruebas y MVP                                   |
-| Tipo de imagen                   | Compose (docker-compose)                          | Usar docker-compose del playground de Rafiki                    |
-| Archivo Compose                  | docker-compose.yml (playground Rafiki)            | Subir el archivo desde el repositorio oficial                   |
-| Tipo de SO                       | Linux                                             | Recomendado para Rafiki y Node.js                               |
-| Memoria (GiB)                    | 4                                                 | Ajustar según requerimientos, 4 GiB es adecuado para pruebas    |
-| Núcleos de CPU                   | 2                                                 | Suficiente para carga inicial                                   |
-| Tipo de GPU                      | None                                              | No requerido                                                    |
-| Recuento de GPU                  | 0                                                 | No requerido                                                    |
-| Tipo de red                      | Privado                                           | Mejor para seguridad, exponer solo los puertos necesarios       |
-| Puertos                          | 3000, 4000, 8080 (TCP)                            | Según docker-compose de Rafiki playground                       |
-| Red virtual                      | (nuevo) Interledger-vnet                          | Crear una nueva VNet para aislar el backend                     |
-| Subred                           | (nuevo) default (10.0.0.0/24)                     | Subred por defecto para la VNet                                 |
-| Habilitar registros de instancia  | Activado                                          | Para monitoreo y troubleshooting                                |
-| Área de trabajo de supervisión    | DefaultWorkspace-...                              | Usar el workspace por defecto o uno dedicado                    |
-| Directiva de reinicio            | En caso de error                                  | Recomendada para alta disponibilidad                            |
-| Invalidación de comando           | [ ]                                               | Dejar vacío si no se requiere override                          |
-| Etiquetas                        | (ninguno)                                         | Opcional, para organización                                     |
+**Suscripción:**  
+Patrocinio 5 Microsoft Azure
 
-**Notas específicas del Hackathon:**
-- El archivo docker-compose.yml debe ser el del playground oficial de Rafiki ([ver repositorio](https://github.com/interledger/rafiki)).
-- Configura el wallet maestro de Kostik en Rafiki para simular la recepción de fondos Web Monetization.
-- Los puertos expuestos deben coincidir con los servicios del playground (usualmente 3000, 4000, 8080).
-- Integra la instancia con la Function App y la base de datos MySQL según el plan.
-- No uses imágenes genéricas, usa la configuración de Rafiki playground.
-- Para variables de entorno, revisa el docker-compose y agrega las necesarias para la integración con el resto del sistema.
-- Seguridad: Red privada, acceso solo desde la VNet del proyecto.
+**Grupo de recursos:**  
+Interledger
+
+**Región:**  
+East US 2
+
+**Nombre del contenedor:**  
+api-wallet
+
+**SKU:**  
+Estándar
+
+**Tipo de imagen:**  
+Public
+
+**Imagen:**  
+mcr.microsoft.com/azuredocs/aci-helloworld:latest
+
+**Tipo de SO:**  
+Linux
+
+**Memoria (GiB):**  
+4
+
+**Número de núcleos de CPU:**  
+2
+
+**Tipo de GPU (versión preliminar):**  
+None
+
+**Recuento de GPU:**  
+0
+
+**Redes:**  
+- Tipo de red: Privado
+- Puertos: 80 (TCP)
+- Red virtual: (nuevo) Interledger-vnet
+- Subred: (nuevo) default (10.0.0.0/24)
+
+**Supervisión:**  
+- Habilitar registros de instancia de contenedor: Activado
+- Área de trabajo de supervisión: DefaultWorkspace-d1470010-67cf-4224-b35f-a128c8d5891e-EUS2
+
+**Opciones avanzadas:**  
+- Directiva de reinicio: En caso de error
+- Invalidación de comando: [ ]
+- Etiquetas: (ninguno)
+
+---
+
+## Checklist de integración del endpoint /api/register con Open Payments SDK
+
+- [ ] Importar el SDK de Open Payments en el backend
+- [ ] Leer el archivo private.key y definir keyId
+- [ ] Crear el cliente autenticado con createAuthenticatedClient
+- [ ] Realizar POST al endpoint de creación de cuenta en Open Payments (Rafiki)
+- [ ] Procesar la respuesta y guardar los datos en la base de datos
+- [ ] Probar la integración y validar la creación real de cuentas
